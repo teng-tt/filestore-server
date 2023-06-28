@@ -4,10 +4,12 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
 	"hash"
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type Sha1Stream struct {
@@ -67,4 +69,21 @@ func GetFileSize(filename string) int64 {
 		return nil
 	})
 	return result
+}
+
+func GetToken(username string) string {
+	// 40位字符 md5(username+timestamp+token_salt) + timestamp[:8]
+	ts := fmt.Sprintf("%x", time.Now().Unix())
+	tokenPrefix := MD5([]byte(username + ts + "_tokensalt"))
+	return tokenPrefix + ts[:8]
+}
+
+func IsTokenValid(token string) bool {
+	// 判读token的时效性，是否过期，取出后8位时间戳，判断是否失效
+	if len(token) != 40 {
+		return false
+	}
+	// 从数据库表tbl_user_token 查询username对应的token信息
+	// 对比两个token是否一致
+	return true
 }
