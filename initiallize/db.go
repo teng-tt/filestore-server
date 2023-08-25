@@ -10,12 +10,12 @@ import (
 
 func DBInit() {
 	url := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8",
-		global.CONF.DBConfig.UserName,
-		global.CONF.DBConfig.DBPassword,
-		global.CONF.DBConfig.Host,
-		global.CONF.DBConfig.Port,
-		global.CONF.DBConfig.Database)
-	
+		global.CONF.DBConf.UserName,
+		global.CONF.DBConf.DBPassword,
+		global.CONF.DBConf.Host,
+		global.CONF.DBConf.Port,
+		global.CONF.DBConf.Database)
+
 	db, _ := sql.Open("mysql", url)
 	db.SetMaxOpenConns(1000)
 	err := db.Ping()

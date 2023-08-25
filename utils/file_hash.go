@@ -71,6 +71,7 @@ func GetFileSize(filename string) int64 {
 	return result
 }
 
+// GetToken 生成用户token
 func GetToken(username string) string {
 	// 40位字符 md5(username+timestamp+token_salt) + timestamp[:8]
 	ts := fmt.Sprintf("%x", time.Now().Unix())
@@ -78,6 +79,7 @@ func GetToken(username string) string {
 	return tokenPrefix + ts[:8]
 }
 
+// IsTokenValid 校验token
 func IsTokenValid(token string) bool {
 	// 判读token的时效性，是否过期，取出后8位时间戳，判断是否失效
 	if len(token) != 40 {

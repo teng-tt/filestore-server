@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// Cors 允许跨域
 func Cors(c *gin.Context) {
 	method := c.Request.Method
 	origin := c.Request.Header.Get("Origin")

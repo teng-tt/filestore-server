@@ -5,9 +5,11 @@ import (
 	"filestore-server/initiallize"
 )
 
+// 项目启动入口
 func main() {
-	initiallize.Viper()
 	r := initiallize.Routers()
+	initiallize.Viper()
 	initiallize.DBInit()
+	initiallize.CacheInit()
 	panic(r.Run(global.CONF.System.Addr))
 }

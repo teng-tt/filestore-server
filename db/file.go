@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"filestore-server/global"
 	"fmt"
+	"log"
 )
 
 type TableFile struct {
@@ -59,4 +60,31 @@ func GetFileMeat(fileHash string) (data *TableFile, err error) {
 		return nil, err
 	}
 	return &tfile, nil
+}
+
+// UpdateFileLocation : 更新文件的存储地址(如文件被转移了)
+func UpdateFileLocation(filehash string, fileaddr string) error {
+	stmt, err := global.DBConn.Prepare(
+		"update tbl_file set`file_addr`=? where  `file_sha1`=? limit 1")
+	if err != nil {
+		log.Println("预编译sql失败, err:" + err.Error())
+		return err
+	}
+	defer stmt.Close()
+
+	ret, err := stmt.Exec(fileaddr, filehash)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	rf, err := ret.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rf <= 0 {
+		log.Printf("更新文件location失败, filehash:%s", filehash)
+		err = fmt.Errorf("更新文件location失败, filehash:%s", filehash)
+		return err
+	}
+	return nil
 }

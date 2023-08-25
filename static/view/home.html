@@ -16,7 +16,7 @@
   </script>
 
   <script src="/static/js/auth.js"></script>
-  <script src="https://cdn.bootcss.com/layer/3.1.0/layer.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/layer/3.1.1/layer.js"></script>
   <script src="http://apps.bdimg.com/libs/layer/2.1/layer.js"></script>
 </head>
 
@@ -106,7 +106,7 @@
         if (!body) {
           return;
         }
-        var data = body;
+        var data = body.data;
         if (!data || data.length <= 0) {
           return;
         }
@@ -131,7 +131,6 @@
         var cdlFileHtml = '<button class="btn btn-info" ' +
           'style="height:30px;margin:5px 3px;"' +
           'onClick = "cdlFile(\'' + dlHost + '/file/download?filehash={0}&{1}\')">断点下载(火狐)</button>';
-
         for (var i = 0; i < data.length; i++) {
           var x = document.getElementById('filetbl').insertRow();
           var cell = x.insertCell();

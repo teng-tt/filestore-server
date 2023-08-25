@@ -3,10 +3,18 @@ package db
 import (
 	"database/sql"
 	"filestore-server/global"
-	"filestore-server/model"
 	"fmt"
 	"log"
 )
+
+type User struct {
+	Username     string
+	Email        string
+	Phone        string
+	SignupAt     string
+	LastActiveAt string
+	Status       int
+}
 
 // UserSignup 通过用户名及密码完成user注册
 func UserSignup(username, passwd string) bool {
@@ -69,8 +77,8 @@ func UpdateToken(username, token string) bool {
 	return true
 }
 
-func GetUserInfo(username string) (user model.User, err error) {
-	respUser := model.User{}
+func GetUserInfo(username string) (user User, err error) {
+	respUser := User{}
 	stmt, err := global.DBConn.Prepare(
 		"select user_name, signup_at from tbl_user where user_name=? limit 1")
 	if err != nil {

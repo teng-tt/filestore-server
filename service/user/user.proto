@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package user;
+option go_package="./user";
+
+// 用户注册请求体
+message ReqSignup {
+  string username = 1;
+  string  password = 2;
+}
+
+// 用户注册响应体
+message RespSignup {
+  int32  code = 1;
+  string  message = 2;
+}
+
+service User {
+  rpc Signup(ReqSignup) returns (RespSignup) {}
+}

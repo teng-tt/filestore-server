@@ -14,11 +14,15 @@ func Routers() *gin.Engine {
 	r.LoadHTMLGlob("static/view/**")
 
 	r.Use(middleware.Cors)
-	r.Use(middleware.Auth)
-	fileStoreRouter := router.RouterGroupApp.FileStoreRouterGroup
-	fileStoreRouter.InitFileStoreRouter(r)
+	// 用户管理路由
 	userRouter := router.RouterGroupApp.UserRouterGroup
 	userRouter.InitUserRouter(r)
+	// 文件管理
+	fileStoreRouter := router.RouterGroupApp.FileStoreRouterGroup
+	fileStoreRouter.InitFileStoreRouter(r)
+	// 分块上传
+	mpuploadRouter := router.RouterGroupApp.MpUploadRouterGroup
+	mpuploadRouter.InitMpUploadRouter(r)
 
 	return r
 }

@@ -2,14 +2,20 @@ package filestore
 
 import (
 	"encoding/json"
+	"filestore-server/db"
+	"filestore-server/global"
 	filemeta "filestore-server/model"
+	"filestore-server/mq"
 	"filestore-server/response"
+	"filestore-server/store/oss"
 	"filestore-server/utils"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -36,7 +42,7 @@ func (f *FileStoreApi) FileUpload(c *gin.Context) {
 	defer src.Close()
 	fileMeta := filemeta.FileMeta{
 		FileName: file.Filename,
-		Location: "/tmp/" + file.Filename,
+		Location: "tmp/" + file.Filename,
 		UploadAt: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
@@ -54,10 +60,49 @@ func (f *FileStoreApi) FileUpload(c *gin.Context) {
 	}
 	newFile.Seek(0, 0)
 	fileMeta.FileSha1 = utils.FileSha1(newFile)
+
+	newFile.Seek(0, 0)
+	// 同时将文件写入ceph存储
+	//data, _ := ioutil.ReadAll(newFile)
+	//bucket := ceph.GetCephBucket("userfile")
+	//cephPath := "/ceph/" + fileMeta.FileSha1
+	//_ = bucket.Put(cephPath, data, "octet-stream", s3.PublicRead)
+	//fileMeta.Location = cephPath
+
+	// 同时将文件写入到oss
+	ossPath := "oss/" + fileMeta.FileSha1
+	//err = oss.Bucket().PutObject(ossPath, newFile)
+	//if err != nil {
+	//	fmt.Println(err.Error())
+	//	response.FailWithMessage(c, "Upload failed!")
+	//	return
+	//}
+	//fileMeta.Location = ossPath
+
+	// 加入消息队列异步转存到oss
+	data := mq.TransferData{
+		FileHash:     fileMeta.FileSha1,
+		CurLocation:  fileMeta.Location,
+		DestLocation: ossPath,
+	}
+	pubData, _ := json.Marshal(data)
+	ok := mq.Publish(
+		global.CONF.RabbitConf.TransExchangeName,
+		global.CONF.RabbitConf.TransOSSRoutingKey,
+		pubData)
+	if !ok {
+		// todo 加入重试发送消息逻辑
+	}
 	// 更新文件元信息，写入内存变量
 	// filemeta.UpdateFileMeta(fileMeta)
 	filemeta.UpdateFileMetaDB(fileMeta)
-	response.Success(c)
+	// 更新用户文件表记录
+	username := c.Query("username")
+	if ok := db.OnUserFileUploadFinished(username, fileMeta.FileSha1, fileMeta.FileName, fileMeta.FileSize); ok {
+		response.Success(c)
+	} else {
+		response.FailWithMessage(c, "Upload Failed")
+	}
 }
 
 // GetFileMeta 获取文件元信息
@@ -74,6 +119,18 @@ func (f *FileStoreApi) GetFileMeta(c *gin.Context) {
 		return
 	}
 	response.SuccessWithDetailed(c, "success!", data)
+}
+
+// GetUserFileMetas 批量获取用户文件元信息
+func (f *FileStoreApi) GetUserFileMetas(c *gin.Context) {
+	username := c.Query("username")
+	limit, _ := strconv.Atoi(c.PostForm("limit"))
+	userFiles, err := db.QueryUserFileMetas(username, limit)
+	if err != nil {
+		response.Fail(c)
+		return
+	}
+	response.SuccessWithDetailed(c, "OK", userFiles)
 }
 
 // FileDownload 文件下载
@@ -134,4 +191,44 @@ func (f *FileStoreApi) FileDelete(c *gin.Context) {
 	// 删除文件元信息
 	filemeta.RemoveFileMeta(fm.FileSha1)
 	response.Success(c)
+}
+
+// TryFastUpload 尝试秒传接口
+func (f *FileStoreApi) TryFastUpload(c *gin.Context) {
+	// 1. 解析请求参数
+	username := c.PostForm("username")
+	filehash := c.PostForm("filehash")
+	filename := c.PostForm("filename")
+	filesize, _ := strconv.ParseInt(c.PostForm("filesize"), 10, 64)
+
+	// 2. 从文件表中查询相同的hash的文件记录
+	fileMeta, err := db.GetFileMeat(filehash)
+	if err != nil {
+		fmt.Println(err.Error())
+		response.Fail(c)
+		return
+	}
+
+	// 3. 查不到记录则返回秒传失败
+	if fileMeta == nil {
+		response.FailWithMessage(c, "秒传失败，请访问葡萄上传接口")
+		return
+	}
+	// 4. 上传过则将文件信息吸入用户文件表，返回成功
+	ok := db.OnUserFileUploadFinished(username, filehash, filename, filesize)
+	if ok {
+		response.SuccessWithMessage(c, "秒传成功！")
+		return
+	}
+	response.FailWithMessage(c, "秒传失败，请稍后重试！")
+}
+
+// DownloadURL 生成oss文件的下载地址
+func (f *FileStoreApi) DownloadURL(c *gin.Context) {
+	filehash := c.PostForm("filehash")
+	// 从文件表查找记录
+	row, _ := db.GetFileMeat(filehash)
+	// todo 判断文件是存在 OSS 还是Ceph
+	signedURL := oss.DownloadURL(row.FileAddr.String)
+	response.SuccessWithDetailed(c, "OK", signedURL)
 }

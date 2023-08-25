@@ -1,8 +1,24 @@
 system:
   addr: ":8080"
-DBConfig:
-  host: "127.0.0.1"
+dbConf:
+  host: "45.82.79.234"
   port: "3306"
   database: "fileserver"
-  userName: "root"
-  DBPassword: "root"
+  userName: "fileserver"
+  DBPassword: "WGDtip6LsbxmD58Y"
+cacheConf:
+  host: "45.82.79.234"
+  port: "3379"
+  password: "filetest"
+ossConf:
+  bucket: "xxx"
+  endpoint: "xx"
+  accessKeyID: "xx"
+  accessKeySecret: "xx"
+RabbitConf:
+  asyncTransferEnable: true
+  rabbitURL: "amqp://guest:guest@127.0.0.1:5672/"
+  transExchangeName: "uploadserver.trans"
+  transOSSQueueName: "uploadserver.trans.oss"
+  transOSSErrQueueName: "uploadserver.trans.oss.err"
+  transOSSRoutingKey: "oss"
