@@ -1,13 +1,13 @@
 system:
   addr: ":8080"
 dbConf:
-  host: "45.82.79.234"
+  host: "127.0.0.1"
   port: "3306"
   database: "fileserver"
   userName: "fileserver"
   DBPassword: "WGDtip6LsbxmD58Y"
 cacheConf:
-  host: "45.82.79.234"
+  host: "127.0.0.1"
   port: "3379"
   password: "filetest"
 ossConf:
